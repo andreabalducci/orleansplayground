@@ -20,7 +20,8 @@ namespace Client
             {
                 using (var client = await ConnectClient())
                 {
-                    await DoClientWork(client);
+                   // await DoClientWork(client);
+                   await DoAggregateWork(client);
                     Console.ReadKey();
                 }
 
@@ -60,6 +61,14 @@ namespace Client
             var friend = client.GetGrain<IHello>(0);
             var response = await friend.SayHello("Good morning, HelloGrain!");
             Console.WriteLine("\n\n{0}\n\n", response);
+        }
+
+        private static async Task DoAggregateWork(IClusterClient client)
+        {
+            var command = new Command();
+            var worker = client.GetGrain<IWorker>("Ticket_1");
+            var response = await worker.ExecuteAsync(command);
+            Console.WriteLine("Response from worker");
         }
     }
 }

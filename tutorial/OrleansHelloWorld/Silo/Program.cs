@@ -1,10 +1,16 @@
 ﻿using System;
 using System.Threading.Tasks;
 using Grains;
+using Grains.MyDomain;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using NStore.Core.InMemory;
+using NStore.Core.Streams;
+using NStore.Domain;
 using Orleans;
 using Orleans.Configuration;
 using Orleans.Hosting;
+using Orleans.Streams;
 
 namespace Silo
 {
@@ -46,11 +52,25 @@ namespace Silo
                 })
                 .ConfigureApplicationParts(parts =>
                     parts.AddApplicationPart(typeof(HelloGrain).Assembly).WithReferences())
+                .ConfigureServices(ConfigureNStore)
                 .ConfigureLogging(logging => logging.AddConsole());
 
             var host = builder.Build();
             await host.StartAsync();
             return host;
+        }
+
+
+        private static void ConfigureNStore(IServiceCollection services)
+        {
+            var persistence = new InMemoryPersistence();
+            var streamFactory = new StreamsFactory(persistence);
+
+            services.AddSingleton<IStreamsFactory>(streamFactory);
+            services.AddSingleton<IAggregateFactory>(s => new AggregateFactory(t => (IAggregate) s.GetRequiredService(t)));
+
+            services.AddTransient<TicketAggregate>();
+            services.AddTransient<IRepository, Repository>();
         }
     }
 }
